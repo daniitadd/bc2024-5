@@ -3,6 +3,11 @@ const express = require('express');
 const app = express();
 const http = require('http');
 const path = require('path');
+const fs = require('fs');
+const multer = require('multer');
+const upload = multer();
+const server = http.createServer(app);
+app.use(express.json());
 
 const program = new Command();
 program
@@ -14,6 +19,31 @@ program.parse(process.argv);
 
 const { host, port, cache } = program.opts();
 
-app.listen(port, host, () => {
+if(!host){
+    console.error("Please, specify the server address");
+    process.exit(1);
+}
+if(!port){
+    console.error("Please, specify the server port");
+    process.exit(1);
+}
+if(!cache){
+    console.error("Please, specify the path to the directory that will contain cached files");
+    process.exit(1);
+}
+
+app.get('/notes/:noteName', (req, res) => {
+    const notePath = path.join(cache, req.params.noteName);
+
+    if (!fs.existsSync(notePath)) {
+        return res.status(404).send('Not found');
+    }
+
+    const noteText = fs.readFileSync(notePath, 'utf8');
+    res.send(noteText);
+});
+
+
+server.listen(port, host, () => {
   console.log(`http://${host}:${port}/`);
 });
