@@ -4,12 +4,32 @@ const multer = require('multer');
 const path = require('path');
 
 const app = express();
-const PORT = 3000;
 const notes = {};
-
 const upload = multer();
-
 app.use(bodyParser.json());
+
+program
+  .option('-h, --host <type>', 'server host')
+  .option('-p, --port <type>', 'server port')
+  .option('-c, --cache <path>', 'cache directory')
+  .parse(process.argv);
+  
+const option = program.opts();
+
+if(!option.host){
+    console.error("Please, specify the server address")
+    process.exit(1);
+}
+if(!option.port){
+    console.error("Please, specify the server port")
+    process.exit(1);
+}
+if(!option.cache){
+    console.error("Please, specify the path to the directory that will contain cached files")
+    process.exit(1);
+}
+const { host, port, cache } = program.opts();
+console.log(`Host: ${host}, Port: ${port}, Cache Directory: ${cache}`);
 
 app.get('/notes/:noteName', (req, res) => {
     const noteName = req.params.noteName;
@@ -55,6 +75,6 @@ app.get('/UploadForm.html', (req, res) => {
     res.sendFile(path.join(__dirname, 'UploadForm.html'));
 });
 
-app.listen(PORT, () => {
-    console.log(`Server is running on http://localhost:${PORT}`);
+server.listen(option.port, option.host, () => {
+    console.log(`Server is running on http://${option.host}:${option.port}`);
 });
