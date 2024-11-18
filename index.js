@@ -1,62 +1,60 @@
-const { Command } = require('commander');
 const express = require('express');
-const app = express();
-const http = require('http');
-const path = require('path');
-const fs = require('fs');
+const bodyParser = require('body-parser');
 const multer = require('multer');
+const path = require('path');
+
+const app = express();
+const PORT = 3000;
+const notes = {};
+
 const upload = multer();
-const server = http.createServer(app);
-app.use(express.json());
 
-const program = new Command();
-program
-  .requiredOption('-h, --host <host>', 'Server host')
-  .requiredOption('-p, --port <port>', 'Server port')
-  .requiredOption('-c, --cache <path>', 'Cache directory path');
-
-program.parse(process.argv);
-
-const { host, port, cache } = program.opts();
-
-if(!host){
-    console.error("Please, specify the server address");
-    process.exit(1);
-}
-if(!port){
-    console.error("Please, specify the server port");
-    process.exit(1);
-}
-if(!cache){
-    console.error("Please, specify the path to the directory that will contain cached files");
-    process.exit(1);
-}
+app.use(bodyParser.json());
 
 app.get('/notes/:noteName', (req, res) => {
-    const notePath = path.join(cache, req.params.noteName);
-
-    if (!fs.existsSync(notePath)) {
+    const noteName = req.params.noteName;
+    if (!notes[noteName]) {
         return res.status(404).send('Not found');
     }
-
-    const noteText = fs.readFileSync(notePath, 'utf8');
-    res.send(noteText);
+    res.status(200).send(notes[noteName]);
 });
+
 app.put('/notes/:noteName', (req, res) => {
-    const notePath = path.join(option.cache, req.params.noteName);
-
-    if (!fs.existsSync(notePath)) {
+    const noteName = req.params.noteName;
+    if (!notes[noteName]) {
         return res.status(404).send('Not found');
     }
-    const newText = req.body.text;
-    if (newText === undefined) {
-        return res.status(400).send('Text is required');
+    notes[noteName] = req.body.text;
+    res.status(200).send('Updated');
+});
+
+app.delete('/notes/:noteName', (req, res) => {
+    const noteName = req.params.noteName;
+    if (!notes[noteName]) {
+        return res.status(404).send('Not found');
     }
-    fs.writeFileSync(notePath, newText);
-    res.send('Note updated');
+    delete notes[noteName];
+    res.status(200).send('Deleted');
 });
 
-server.listen(port, host, () => {
-  console.log(`http://${host}:${port}/`);
+app.get('/notes', (req, res) => {
+    const noteList = Object.keys(notes).map(name => ({ name, text: notes[name] }));
+    res.status(200).json(noteList);
 });
 
+app.post('/write', upload.none(), (req, res) => {
+    const { note_name, note } = req.body;
+    if (notes[note_name]) {
+        return res.status(400).send('Note already exists');
+    }
+    notes[note_name] = note;
+    res.status(201).send('Created');
+});
+
+app.get('/UploadForm.html', (req, res) => {
+    res.sendFile(path.join(__dirname, 'UploadForm.html'));
+});
+
+app.listen(PORT, () => {
+    console.log(`Server is running on http://localhost:${PORT}`);
+});
