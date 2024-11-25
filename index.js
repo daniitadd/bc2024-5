@@ -2,6 +2,8 @@ const express = require('express');
 const bodyParser = require('body-parser');
 const multer = require('multer');
 const path = require('path');
+const { Command } = require('commander');
+const program = new Command();
 
 const app = express();
 const notes = {};
@@ -75,6 +77,6 @@ app.get('/UploadForm.html', (req, res) => {
     res.sendFile(path.join(__dirname, 'UploadForm.html'));
 });
 
-server.listen(option.port, option.host, () => {
+app.listen(option.port, option.host, () => {
     console.log(`Server is running on http://${option.host}:${option.port}`);
 });
